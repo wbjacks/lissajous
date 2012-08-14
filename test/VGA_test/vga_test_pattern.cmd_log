@@ -1,0 +1,4 @@
+xst -intstyle ise -ifn "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/vga_test_pattern.xst" -ofn "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/vga_test_pattern.syr" 
+ngdbuild -intstyle ise -dd _ngo -nt timestamp -uc vga.ucf -p xc3s500e-fg320-4 vga_test_pattern.ngc vga_test_pattern.ngd  
+xst -intstyle ise -ifn "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/vga_test_pattern.xst" -ofn "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/vga_test_pattern.syr" 
+ngdbuild -intstyle ise -dd _ngo -nt timestamp -uc vga.ucf -p xc3s500e-fg320-4 vga_test_pattern.ngc vga_test_pattern.ngd  

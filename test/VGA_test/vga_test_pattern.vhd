@@ -41,6 +41,7 @@ begin
 	-- set the colors based on the current pixel
 	process(row,column)
 	begin
+		color <= BLACK;
 		-- large vertical color bands, evenly spaced horizontally, 320px vertically
 		-- Gray, yellow, cyan, green, purple, red, blue
 		if (column >= 0) and (column < 92) and (row >= 0) and (row < 320) then
