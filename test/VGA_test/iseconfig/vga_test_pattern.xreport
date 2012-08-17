@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <report-views version="2.0" >
  <header>
-  <DateModified>2012-08-14T16:05:16</DateModified>
+  <DateModified>2012-08-16T23:33:44</DateModified>
   <ModuleName>vga_test_pattern</ModuleName>
   <SummaryTimeStamp>Unknown</SummaryTimeStamp>
   <SavedFilePath>C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/iseconfig/vga_test_pattern.xreport</SavedFilePath>
-  <ImplementationReportsDirectory>C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test</ImplementationReportsDirectory>
+  <ImplementationReportsDirectory>C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test\</ImplementationReportsDirectory>
   <DateInitialized>2012-08-14T16:05:16</DateInitialized>
   <EnableMessageFiltering>false</EnableMessageFiltering>
  </header>

@@ -1,0 +1,3 @@
+vhdl work "vga_test_pattern.vhd"
+vhdl work "vga_controller.vhd"
+vhdl work "timing_test.vhd"

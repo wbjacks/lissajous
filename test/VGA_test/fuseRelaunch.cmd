@@ -1,0 +1,1 @@
+-intstyle "ise" -incremental -o "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/timing_test_isim_beh.exe" -prj "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/timing_test_beh.prj" "work.timing_test" 

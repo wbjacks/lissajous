@@ -1,0 +1,5 @@
+set -tmpdir "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/xst/projnav.tmp"
+set -xsthdpdir "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/xst"
+elaborate
+-ifn vga_controller.prj
+-ifmt mixed

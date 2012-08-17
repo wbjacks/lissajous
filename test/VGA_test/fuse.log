@@ -1,0 +1,24 @@
+Running: fuse.exe -relaunch -intstyle "ise" -incremental -o "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/timing_test_isim_beh.exe" -prj "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/timing_test_beh.prj" "work.timing_test" 
+ISim O.87xd (signature 0xc3576ebc)
+Number of CPUs detected in this system: 8
+Turning on mult-threading, number of parallel sub-compilation jobs: 16 
+Determining compilation order of HDL files
+Parsing VHDL file "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/vga_test_pattern.vhd" into library work
+Parsing VHDL file "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/vga_controller.vhd" into library work
+Parsing VHDL file "C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/timing_test.vhd" into library work
+Starting static elaboration
+Completed static elaboration
+Compiling package standard
+Compiling package std_logic_1164
+Compiling package std_logic_arith
+Compiling package std_logic_unsigned
+Compiling package numeric_std
+Compiling architecture behavioral of entity vga_test_pattern [vga_test_pattern_default]
+Compiling architecture structural of entity vga_controller [vga_controller_default]
+Compiling architecture behavior of entity timing_test
+Time Resolution for simulation is 1ps.
+Waiting for 1 sub-compilation(s) to finish...
+Compiled 10 VHDL Units
+Built simulation executable C:/Users/Administrator/Documents/GitHub/lissajous/test/VGA_test/timing_test_isim_beh.exe
+Fuse Memory Usage: 36800 KB
+Fuse CPU Usage: 1700 ms

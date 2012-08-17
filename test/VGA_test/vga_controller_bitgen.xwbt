@@ -1,0 +1,8 @@
+INTSTYLE=ise
+INFILE=C:\Users\Administrator\Documents\GitHub\lissajous\test\VGA_test\vga_controller.ncd
+OUTFILE=C:\Users\Administrator\Documents\GitHub\lissajous\test\VGA_test\vga_controller.bit
+FAMILY=Spartan3E
+PART=xc3s500e-4fg320
+WORKINGDIR=C:\Users\Administrator\Documents\GitHub\lissajous\test\VGA_test
+LICENSE=ISE
+USER_INFO=210643936_1777485687_210542880_241

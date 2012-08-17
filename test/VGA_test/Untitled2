@@ -1,0 +1,368 @@
+----------------------------------------------------------------------------------
+-- Company: ENGS31 12X
+-- Engineer: Peter Horak and Nathan Lehrer
+-- 
+-- Create Date:    16:17:50 07/26/2012 
+-- Module Name:    Reciever - Structural
+-- Project Name:   Lab 4.I.4
+----------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.numeric_std.all;
+
+entity Reciever is
+    Port ( Clk50 : in  STD_LOGIC;
+           RsRx : in  STD_LOGIC;		-- serial data in
+			  recall : in STD_LOGIC;
+			  reverse : in STD_LOGIC;
+			  seg_out : out STD_LOGIC_VECTOR(6 downto 0);
+			  an_out : out STD_LOGIC_VECTOR(3 downto 0);
+			  RsTx : out STD_LOGIC;		-- serial data out
+			  empty_flag : out STD_LOGIC;
+			  full_flag : out STD_LOGIC
+			  );
+end Reciever;
+
+architecture Structural of Reciever is
+   signal tie_low: std_logic; -- ground for the mux/display
+	
+COMPONENT BlockRAM
+  PORT (
+    clka : IN STD_LOGIC;
+    wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    addra : IN STD_LOGIC_VECTOR(10 DOWNTO 0);
+    dina : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+    douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+  );
+END COMPONENT;
+
+COMPONENT BRAMController
+	PORT(
+		Clk50 : IN std_logic;
+		recall : IN std_logic;
+		reverse : IN std_logic;
+		rx_done_tick : IN std_logic;
+		c_zero : IN std_logic;
+		i_eq : IN std_logic;          
+		c_en : OUT std_logic;
+		c_up : OUT std_logic;
+		i_en : OUT std_logic;
+		mem_ld : OUT std_logic;
+		clear : OUT std_logic;
+		addr_ctrl : OUT std_logic;
+		empty_flag : OUT std_logic;
+		full_flag : OUT std_logic;
+		tx_start : OUT std_logic;
+		tx_done_tick : IN std_logic
+	);
+END COMPONENT;
+
+COMPONENT  SerialTx is
+    Port ( Clk50 : in  STD_LOGIC;
+           tx_data : in  STD_LOGIC_VECTOR (7 downto 0);
+           tx_start : in  STD_LOGIC;
+           tx_tick16 : in  STD_LOGIC;				-- from BRG
+           tx : out  STD_LOGIC;					-- to Nexys 2 RS-232 port
+           tx_done_tick : out  STD_LOGIC);
+end component;
+
+component mux7seg is
+    Port ( clk50 : in  STD_LOGIC;
+           y0, y1, y2, y3 : in  STD_LOGIC_VECTOR (3 downto 0);
+			  bi : in  STD_LOGIC;							
+           seg : out  STD_LOGIC_VECTOR (0 to 6);	
+           an : out  STD_LOGIC_VECTOR (3 downto 0) );			
+end component;
+
+COMPONENT Controller
+	PORT(
+		Clk50 : IN std_logic;
+		Din : IN std_logic;
+		ShiftPulse : IN std_logic;
+		SamplePulse : IN std_logic;          
+		DataLD : OUT std_logic;
+		Clear : OUT std_logic;
+		ShiftEN : OUT std_logic;
+		ShiftCountReset : OUT std_logic;
+		BRCountEN : OUT std_logic;
+		BRCountReset : OUT std_logic;
+		rx_done_tick : OUT std_logic
+		);
+END COMPONENT;
+
+COMPONENT BaudRateCounter
+	PORT(
+		Clk50 : IN std_logic;          
+		Pulse : OUT std_logic
+		);
+END COMPONENT;
+
+COMPONENT BRcounter
+	PORT(
+		Clk50 : IN std_logic;
+		EN : IN std_logic;
+		R : IN std_logic;
+		RBGpulse : IN std_logic;          
+		Pulse : OUT std_logic
+		);
+END COMPONENT;
+
+COMPONENT ShiftCounter
+	PORT(
+		Clk50 : IN std_logic;
+		EN : IN std_logic;
+		R : IN std_logic;          
+		Pulse : OUT std_logic
+		);
+END COMPONENT;
+
+COMPONENT TenBitShiftReg
+	PORT(
+		ShiftEN : IN std_logic;
+		DataLD : IN std_logic;
+		Clear : IN std_logic;
+		Clk50 : IN std_logic;
+		Din : IN std_logic;          
+		Data : OUT std_logic_vector(7 downto 0)
+		);
+END COMPONENT;
+
+	-- Serial reciever internal signals
+	signal Data_LD : std_logic;		-- load the accumulated data from the shift register into rx_data
+	signal Shift_Pulse : std_logic;	-- pulses when the incoming data has been shifted 10 times
+	signal Shift_EN : std_logic;		-- enable the shift-register counter
+	signal Shift_R : std_logic;		-- reset the shift-register counter
+	signal BRC_Pulse : std_logic;		-- pulses in the middle of incoming data bits
+	signal BRC_EN : std_logic;			-- enable the baud-rate counter
+	signal BRC_R : std_logic;			-- reset the baud-rate counter
+	signal Shift_Reg_C : std_logic;	-- clear the shift register
+	signal Pulse16 : std_logic;		-- baud-rate generator output (pulses at 16 times the baud rate)
+	signal RsRx_sync : std_logic;		-- serial data partially synchronized
+	signal RsRx_synced : std_logic;	-- synchronized serial data
+	signal irx_data : std_logic_vector(7 downto 0); -- internal parallel data
+	signal irx_done_tick : std_logic;-- done recieving one character
+	
+	-- Serial transmitter internal signals
+	signal itx_data : std_logic_vector(7 downto 0);	-- the character to transmit
+	signal tx_start : std_logic;							-- signal to begin transmitting a character
+	signal tx_done_tick : std_logic;						-- done transmitting character
+	
+	-- BRAM signals
+	signal address : std_logic_vector(4 downto 0) := "00000";	-- the address from the selected counter
+	signal extended_addr : std_logic_vector(10 downto 0);			-- the address extended to fit the BRAM address
+	signal imemory_load : std_logic;										-- to convert between std_logic and std_logic_vect(0 downto 0)
+	signal imemory_load_vect : std_logic_vector(0 downto 0);
+	signal iaddress_ctrl : std_logic;									-- the mux control signal to select the current address counter
+
+	
+	-- BRAM-address-counter controls and signals
+	signal c_ud_en : std_logic;	-- enable the main address counter to count
+	signal c_seq_en : std_logic;	-- enable the sequencing counter to count
+	signal c_up : std_logic;		-- 1 -> count up, 0 -> count down (for the main counter)
+	signal c_clear : std_logic;	-- reset both counters
+	signal c_zero : std_logic;		-- the main counter is zero
+	signal i_eq : std_logic;		-- two counters are equal
+	signal count_ud : unsigned(4 downto 0) := (others => '0');	-- main counter (up/down) count
+	signal count_seq : unsigned(4 downto 0) := (others => '0');	-- sequencing counter count
+	
+	-- Debouncer signals
+	signal db_reg1 : std_logic_vector(7 downto 0) := (others => '0');
+	signal db_reg2 : std_logic_vector(7 downto 0) := (others => '0');
+	signal db_recall,db_reverse : std_logic;
+begin
+
+imemory_load_vect(0) <= imemory_load; -- convert between different signal types
+extended_addr <= (std_logic_vector(resize(unsigned(address),11))); -- extend address
+
+-- Synchronize the serial data coming in
+DoubleFlopSync : process(Clk50)
+begin
+	if rising_edge(Clk50) then
+		RsRx_synced <= RsRx_sync; -- the order matters
+		RsRx_sync <= RsRx;
+	end if;
+end process DoubleFlopSync;
+
+-- Multiplexer to choose which counter is the source for the BRAM address
+Mux : process(iaddress_ctrl,count_ud,count_seq)
+begin
+	if iaddress_ctrl = '0' then
+		address <= std_logic_vector(count_ud);
+	else 
+		address <= std_logic_vector(count_seq);
+	end if;
+end process Mux;
+
+-- Up/down counter (main address counter). Initially keeps track of the BRAM write address. Keeps track of the read address when recalling in reverse order.
+CounterUD: process(Clk50, c_ud_en, c_up, c_clear)
+begin
+	if rising_edge(Clk50) then
+		if c_clear = '1' then		-- reset has precedence
+			count_ud <= (others => '0');
+		elsif c_ud_en = '1' then	-- count
+			if c_up = '1' then
+				count_ud <= count_ud + 1;
+			else
+				count_ud <= count_ud - 1;
+			end if;
+		end if;
+	end if;
+end process CounterUD;
+
+-- Up counter to keep track of the read address when recalling in the original/sequencial order.
+CounterSeq: process(Clk50, c_seq_en, c_clear)
+begin
+	if rising_edge(Clk50) then
+		if c_clear = '1' then		-- reset has precedence
+			count_seq <= (others => '0');
+		elsif c_seq_en = '1' then	-- count
+			count_seq <= count_seq + 1;
+		end if;
+	end if;
+end process CounterSeq;
+
+-- Determine when the main address counter is 0 and/or when the two address counters are equal
+Comparators: process(count_ud, count_seq)
+begin
+	c_zero <= '0';
+	i_eq <= '0';
+	if count_ud = 0 then
+		c_zero <= '1';
+	end if;
+	if count_ud = count_seq then
+		i_eq <= '1';
+	end if;
+end process Comparators;
+
+-- Debounce the recall button (monopulsing unnesseary because the circuit can't transmit anything more once it is empty)
+Debounce_Recall: process(Clk50)
+begin
+	if (rising_edge(Clk50)) then
+		if Pulse16='1' then
+			if recall /= db_reg1(0) then
+				db_reg1 <= recall & db_reg1(7 downto 1);
+			elsif db_reg1(0) = '1' then
+				db_reg1 <= (others => '1');
+			else
+				db_reg1 <= (others => '0');
+			end if;
+		end if;
+		db_recall <= db_reg1(0);
+	end if;
+end process Debounce_Recall;
+
+-- Debounce the reverse switch (monopulsing not needed because it is a switch)
+Debounce_Reverse: process(Clk50)
+begin
+	if (rising_edge(Clk50)) then
+		if Pulse16='1' then
+			if reverse /= db_reg2(0) then
+				db_reg2 <= reverse & db_reg2(7 downto 1);
+			elsif db_reg2(0) = '1' then
+				db_reg2 <= (others => '1');
+			else
+				db_reg2 <= (others => '0');
+			end if;
+		end if;
+		db_reverse <= db_reg2(0);
+	end if;
+end process Debounce_Reverse;
+
+-- Serial transmitter
+Inst_SerialTx: SerialTx PORT MAP(
+		Clk50 => Clk50,
+		tx_data => itx_data,
+		tx_start => tx_start,
+		tx_tick16 => Pulse16,
+		tx => RsTx,
+		tx_done_tick => tx_done_tick
+	);
+
+tie_low <= '0';
+
+-- Block-RAM controller (FSM)
+Inst_BRAMController: BRAMController PORT MAP(
+	Clk50 => Clk50,
+	recall => db_recall,
+	reverse => db_reverse,
+	rx_done_tick => irx_done_tick,
+	c_zero => c_zero,
+	c_en => c_ud_en,
+	c_up => c_up,
+	i_eq => i_eq,
+	i_en => c_seq_en,
+	mem_ld => imemory_load,
+	clear => c_clear,
+	addr_ctrl => iaddress_ctrl,
+	empty_flag => empty_flag,
+	full_flag => full_flag,
+	tx_start => tx_start,
+	tx_done_tick => tx_done_tick
+);
+
+-- Block RAM
+BlockRAM_Inst : BlockRAM
+  PORT MAP (
+    clka => Clk50,
+    wea => imemory_load_vect,
+    addra => extended_addr,
+    dina => irx_data,
+    douta => itx_data
+  );
+
+-- Multiplexed 7-seg display
+U_yourname: mux7seg
+    Port Map ( clk50 =>  Clk50,
+           y3 =>  (others => '0'), 
+           y2 =>  (others => '0'), 
+           y1 =>  irx_data(7 downto 4), 
+           y0 =>  irx_data(3 downto 0),
+			  bi => tie_low,						
+           seg => seg_out,
+           an => an_out);	
+
+-- FSM that acts as the controller for the reciever
+Inst_Controller: Controller PORT MAP(
+		Clk50 => Clk50,
+		Din => RsRx_synced,
+		DataLD => Data_LD,
+		Clear => Shift_Reg_C,
+		ShiftPulse => Shift_Pulse,
+		ShiftEN => Shift_EN,
+		ShiftCountReset => Shift_R,
+		SamplePulse => BRC_Pulse,
+		BRCountEN => BRC_EN,
+		BRCountReset => BRC_R,
+		rx_done_tick => irx_done_tick);
+
+-- Misnamed, it should be baud-rate generator
+Inst_BaudRateCounter: BaudRateCounter PORT MAP(
+		Clk50 => Clk50,
+		Pulse => Pulse16);
+
+-- Pulse near the middle of incoming data bits
+Inst_BRcounter: BRcounter PORT MAP(
+		Clk50 => Clk50,
+		EN => BRC_EN,
+		R => BRC_R,
+		RBGpulse => Pulse16,
+		Pulse => BRC_Pulse);
+		
+-- Count how many bits have been shifted into the shift register
+Inst_ShiftCounter: ShiftCounter PORT MAP(
+		Clk50 => Clk50,
+		EN => Shift_EN,
+		R => Shift_R,
+		Pulse => Shift_Pulse);
+		
+-- Shift register and data register combined
+Inst_TenBitShiftReg: TenBitShiftReg PORT MAP(
+		ShiftEN => Shift_EN,
+		DataLD => Data_LD,
+		Clear => Shift_Reg_C,
+		Clk50 => Clk50,
+		Din => RsRx_synced,
+		Data => irx_data);
+
+end Structural;
+
