@@ -5,9 +5,9 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity toplevel is
 	port( clk50		: in  std_logic;
-			D0			: in  std_logic;
-			D1			: in 	std_logic;
-			CS			: out std_logic;
+			D0			: in  std_logic;	-- Function inputs from A->D
+			D1			: in  std_logic;
+			CS			: out std_logic;	-- Clear
 			Sclk		: out std_logic;
 			hsync		: out std_logic;
 			vsync		: out std_logic;
@@ -19,6 +19,7 @@ end toplevel;
 
 architecture structural of toplevel is
 	
+	-- Data controller takes input from the A-D and maps it to the memory
 	component datacontroller is
 		port( clk50 	: IN 	std_logic;
 				serialD0 : IN 	std_logic;
@@ -30,6 +31,7 @@ architecture structural of toplevel is
 			);
 	end component;
 	
+	-- VGA controller prints the contents of the VRAM to the VGA screen
 	component VGAcontroller is
 		port( clk50 	: IN 	std_logic;
 				ivgaGreen: IN	std_logic;
@@ -43,6 +45,7 @@ architecture structural of toplevel is
 			);
 	end component;
 	
+	-- VRAM holds a "map" of the dispaly and is updated from the functions
 	component VRAM is
 		port( clka 		: IN 	STD_LOGIC;
 				rsta 		: IN 	STD_LOGIC;

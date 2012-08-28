@@ -29,6 +29,7 @@ begin
 	
 	isclk <= newclk;
 	
+	-- Clock divide to sync with A->D
 	a2dclockdiv: process(clk50)
 		begin
 			if rising_edge(clk50) then
@@ -41,12 +42,14 @@ begin
 			end if;
 		end process a2dclockdiv;
 
+	-- State updater for data controller
 	state_logic: process(clk50)
 		begin
 			if rising_edge(clk50) then
 				color <= "0";
 				case state is
 					
+					-- Idle state: Wait for input
 					when idle =>
 						iCS <= '1';
 						if ((a2dclkdiv = 3) and (newclk = '1')) then
@@ -61,6 +64,7 @@ begin
 							state <= idle;
 						end if;
 						
+					-- Read: Take input from A->D, store in id signals
 					when readADC =>
 						iCS <= '0';
 						if ((a2dclkdiv = 3) and (newclk = '1')) then
@@ -80,6 +84,7 @@ begin
 							state <= readADC;
 						end if;
 						
+					-- Compute: Caculate location in memory and store
 					when computeAddrP1 =>
 						color <= "1";
 						xint <= to_integer(id0-639);

@@ -4,37 +4,40 @@ use IEEE.NUMERIC_STD.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity VGAcontroller is
-	port( clk50		: in	std_logic;
-			ivgaGreen: in	std_logic;
-			ihsync	: out std_logic;
-			ivsync	: out std_logic;
+	port (	clk50		: in  std_logic;
+			ivgaGreen	: in  std_logic;
+			ihsync		: out std_logic;
+			ivsync		: out std_logic;
 			ired		: out std_logic_vector (2 downto 0);
-			igreen	: out std_logic_vector (2 downto 0);
+			igreen		: out std_logic_vector (2 downto 0);
 			iblue		: out std_logic_vector (1 downto 0);
-			memaddr	: out std_logic_vector (15 downto 0);
+			memaddr		: out std_logic_vector (15 downto 0);
 			set0		: out std_logic_vector (0 downto 0)
-		);		
+
+		);
 end VGAcontroller;
 
 architecture Behavioral of VGAcontroller is
 	signal clkdivcount	: unsigned(0 downto 0);
-	signal slowCE			: std_logic;
-	signal hcount			: unsigned (9 downto 0);
-	signal vcount			: unsigned (9 downto 0);
-	signal colorin			: std_logic_vector(7 downto 0);
-	signal x					: unsigned (9 downto 0);
-	signal y					: unsigned (9 downto 0);
-	signal frameCount		: unsigned (0 downto 0);
+	signal slowCE		: std_logic;
+	signal hcount		: unsigned (9 downto 0);
+	signal vcount		: unsigned (9 downto 0);
+	signal colorin		: std_logic_vector(7 downto 0);
+	signal x			: unsigned (9 downto 0);
+	signal y			: unsigned (9 downto 0);
+	signal frameCount	: unsigned (0 downto 0);
 	constant CGREEN		: std_logic_vector(7 downto 0) := "00011100";
-	constant WHITE			: std_logic_vector(7 downto 0) := "11011011";
-	constant BLACK			: std_logic_vector(7 downto 0) := "00000000";
-	
+	constant WHITE		: std_logic_vector(7 downto 0) := "11011011";
+	constant BLACK		: std_logic_vector(7 downto 0) := "00000000";
+
 begin
 
+-- Persistently set color
 ired 	<= colorin (7 downto 5);
-igreen <= colorin (4 downto 2);
+igreen	<= colorin (4 downto 2);
 iblue	<= colorin (1 downto 0);
 
+-- Sync with VGA
 ClockDivider: process(clk50)
 	begin
 		if (rising_edge(clk50)) then
@@ -44,6 +47,7 @@ ClockDivider: process(clk50)
 
 slowCE <= '1' when clkdivcount = "1" else '0';
 	
+-- Counters for pixel writing cycle
 HandVcount: process (clk50)
 	begin
 		if rising_edge(clk50) then
@@ -65,7 +69,8 @@ HandVcount: process (clk50)
 			end if;
 		end if;
 	end process HandVcount;			
-		
+
+-- Sync pulses for VGA display
 HandVsync: process(hcount,vcount)
 	begin
 		if (hcount > 655) and (hcount < 752) then
@@ -81,10 +86,12 @@ HandVsync: process(hcount,vcount)
 		end if;
 end process HandVsync;
 
+-- Grab write data from memory with magic algorithim
 x <= ((hcount+1)/2)-1;
 y <= ((vcount+1)/2)-1;
 memaddr <= std_logic_vector((x-39)+(y*239));
 
+-- Color screen
 Pattern: process (x,y,frameCount,ivgaGreen)
 
 	begin
