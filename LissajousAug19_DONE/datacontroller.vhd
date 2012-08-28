@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------------------
+-- Data Controller
+-- Will Jackson and Patrick Yukman
+-- ENGS 31: Digital Electronics
+-- Tuesday, August 28, 2012
+--
+-- Controls input from Analog-to-Digital Converter into the memory block
+------------------------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;

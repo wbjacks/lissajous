@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------------------
+-- Top Level Source Code
+-- Will Jackson and Patrick Yukman
+-- ENGS 31: Digital Electronics
+-- Tuesday, August 28, 2012
+--
+-- Interfaces parts for the Lissajous Wave Visualizer
+------------------------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_ARITH.ALL;
